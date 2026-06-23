@@ -132,10 +132,10 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
 
         <section className="panel">
           <div className="panel-heading">
-            <h2>getFcmToken</h2>
+            <h2>getDeviceToken</h2>
           </div>
-          <button className="wide" onClick={() => runAndShow('getFcmToken', () => window.SpcMobile!.getFcmToken())}>
-            getFcmToken
+          <button className="wide" onClick={() => runAndShow('getDeviceToken', () => window.SpcMobile!.getDeviceToken())}>
+            getDeviceToken
           </button>
         </section>
 
