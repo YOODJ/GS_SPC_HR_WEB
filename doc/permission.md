@@ -35,17 +35,15 @@ sequenceDiagram
     else 권한 상태가 결정되지 않은 상태 (notDetermined)
         App->>OS: 시스템 권한 요청 팝업 트리거
         OS->>User: 권한 요청 모달 노출 (허용 / 허용 안 함)
-        Note over App: 5초 스캔 대기 타이머 가동 (스캐너 대기)
         
         alt 사용자가 "허용 안 함(Don't Allow)" 선택
             User->>OS: "허용 안 함" 클릭
             OS->>App: 권한 상태 변화 감지 (denied로 변경)
-            App->>App: 5초 타이머 즉시 취소 및 스캔 중단
             App-->>Web: 즉시 콜백 {"error": "permissions_denied"} 반환
         else 사용자가 "허용" 선택
             User->>OS: "앱 사용 중 허용" 클릭
             OS->>App: 권한 상태 변화 감지 (authorized로 변경)
-            App->>App: 즉시 실제 iBeacon 스캔 활성화
+            App->>App: 5초 스캔 대기 타이머 가동 및 스캔 활성화
             alt 5초 이내에 지정한 비콘 신호 감지 성공
                 App-->>Web: 감지된 비콘 데이터 반환 (JSON 포맷)
             else 5초 초과 (감지 실패)
