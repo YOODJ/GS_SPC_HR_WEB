@@ -1,7 +1,7 @@
 export type BridgeResult = Record<string, unknown> | string | null;
 
 export type NativeBridge = {
-  getCurrentBeacon: (callbackName?: string, uuid?: string) => BridgeResult | Promise<BridgeResult>;
+  getCurrentBeacon: (callbackName?: string, targetUuidsJson?: string) => BridgeResult | Promise<BridgeResult> | void;
   stopBeacon: () => BridgeResult | Promise<BridgeResult>;
   getDeviceToken: () => BridgeResult | Promise<BridgeResult>;
   saveRefreshToken: (token: string) => BridgeResult | Promise<BridgeResult>;

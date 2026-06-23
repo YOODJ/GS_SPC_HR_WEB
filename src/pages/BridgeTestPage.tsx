@@ -7,7 +7,17 @@ type BridgeTestPageProps = {
 
 export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
   const [tokenInput, setTokenInput] = useState('sample-refresh-token');
-  const [beaconUuid, setBeaconUuid] = useState('F7CE4A5C-370F-BB91-ED58-A44FA7EBBBCC');
+  const [beaconUuidsJson, setBeaconUuidsJson] = useState(
+    JSON.stringify(
+      [
+        '74278BDA-B644-4520-8F0C-720EAF059935',
+        'E2C56DB5-DFFB-48D2-B060-D0F5A71096E0',
+        'F7CE4A5C-370F-BB91-ED58-A44FA7EBBBCC'
+      ],
+      null,
+      2
+    )
+  );
   const [beaconLogs, setBeaconLogs] = useState<string[]>([]);
   const [biometricEnabled, setBiometricEnabled] = useState(true);
   const [running, setRunning] = useState<string | null>(null);
@@ -45,13 +55,29 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
     
     // 연속 호출을 처리하기 위해 콜백 함수 재정의
     window.myBeaconCallback = (payload) => {
+      console.log("payload", payload);
       const msg = typeof payload === 'string' ? payload : JSON.stringify(payload);
-      setBeaconLogs((prev) => [...prev, msg]);
+      setBeaconLogs((prev) => [...prev, `payload: ${msg}`]);
     };
 
     try {
       setRunning('scanBeacon');
-      const immediate = window.SpcMobile!.getCurrentBeacon('window.myBeaconCallback', beaconUuid);
+
+      // 입력한 JSON 유효성 검사 및 직렬화
+      let formattedUuids = '';
+      try {
+        const parsed = JSON.parse(beaconUuidsJson);
+        if (!Array.isArray(parsed)) {
+          throw new Error('UUIDs must be a JSON array');
+        }
+        formattedUuids = JSON.stringify(parsed);
+      } catch (err) {
+        alert('올바른 JSON 배열 형식으로 입력해주세요.');
+        return;
+      }
+
+      console.log("[Web] Calling getCurrentBeacon with:", formattedUuids);
+      const immediate = window.SpcMobile!.getCurrentBeacon('window.myBeaconCallback', formattedUuids);
       const result = normalizeResult(await Promise.resolve(immediate));
       
       // 시작 결과도 로그에 남김
@@ -144,8 +170,13 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
             <h2>Beacon Scan</h2>
           </div>
           <div className="field">
-            <label htmlFor="beaconUuid">UUID</label>
-            <input id="beaconUuid" value={beaconUuid} onChange={(event) => setBeaconUuid(event.target.value)} />
+            <label htmlFor="beaconUuidsJson">Target UUIDs (JSON Array)</label>
+            <textarea
+              id="beaconUuidsJson"
+              value={beaconUuidsJson}
+              onChange={(event) => setBeaconUuidsJson(event.target.value)}
+              style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
+            />
           </div>
           <button className="wide" onClick={startBeaconScan}>
             Scan
