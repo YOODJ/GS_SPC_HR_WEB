@@ -8,12 +8,12 @@ export function FileTestPage({ onBack }: FileTestPageProps) {
       <header className="topbar">
         <div>
           <p className="eyebrow">SPC Hybrid WebView</p>
-          <h1>File 테스트</h1>
-        </div>
-        <div className="topbar-actions">
-          <button className="secondary" onClick={onBack}>
-            Back
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <h1>File 테스트</h1>
+            <button className="secondary" onClick={onBack} style={{ minHeight: '32px', height: '32px', padding: '0 10px', fontSize: '14px' }}>
+              Back
+            </button>
+          </div>
         </div>
       </header>
 

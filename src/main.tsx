@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BridgeTestPage } from './pages/BridgeTestPage';
+import { FcmTestPage } from './pages/FcmTestPage';
 import { FileTestPage } from './pages/FileTestPage';
 import { HomePage } from './pages/HomePage';
 import './styles.css';
 
-type RoutePath = '/' | '/bridge' | '/file';
+type RoutePath = '/' | '/bridge' | '/fcm' | '/file';
 
 function currentPath(): RoutePath {
   const hashPath = window.location.hash.replace(/^#/, '');
 
-  if (hashPath === '/bridge' || hashPath === '/file') {
+  if (hashPath === '/bridge' || hashPath === '/fcm' || hashPath === '/file') {
     return hashPath;
   }
 
@@ -34,6 +35,8 @@ function App() {
   switch (path) {
     case '/bridge':
       return <BridgeTestPage onBack={() => navigate('/')} />;
+    case '/fcm':
+      return <FcmTestPage onBack={() => navigate('/')} />;
     case '/file':
       return <FileTestPage onBack={() => navigate('/')} />;
     default:

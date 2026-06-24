@@ -151,45 +151,18 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
       <header className="topbar">
         <div>
           <p className="eyebrow">SPC Hybrid WebView</p>
-          <h1>Bridge Test Console</h1>
-        </div>
-        <div className="topbar-actions">
-          <button className="secondary" onClick={onBack}>
-            Back
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <h1>Bridge Test Console</h1>
+            <button className="secondary" onClick={onBack} style={{ minHeight: '32px', height: '32px', padding: '0 10px', fontSize: '14px' }}>
+              Back
+            </button>
+          </div>
         </div>
       </header>
 
       <div className="content-grid">
-        <section className="panel">
-          <div className="panel-heading">
-            <h2>Callback Test</h2>
-          </div>
-          <div className="button-grid two">
-            <button onClick={() => {
-              window.myTestCallback = (payload) => {
-                console.log("[Web] myTestCallback called with:", payload);
-                try {
-                  const msg = typeof payload === 'string' ? payload : JSON.stringify(payload);
-                  alert("Callback Received: " + msg);
-                } catch (e) {
-                  alert("Callback Received but failed to parse: " + String(payload));
-                }
-              };
-              console.log("[Web] Calling native testCallback...");
-              window.SpcMobile?.testCallback?.('window.myTestCallback');
-            }}>
-              Test Native
-            </button>
-            <button className="secondary" onClick={() => {
-              console.log("[Web] Simulating evaluateJavascript...");
-              // 네이티브에서 evaluateJavascript를 호출하는 것과 동일한 효과
-              window.eval("window.myTestCallback && window.myTestCallback('Simulation Success')");
-            }}>
-              Simulate Eval
-            </button>
-          </div>
-        </section>
+
+
 
         <section className="panel">
           <div className="panel-heading">

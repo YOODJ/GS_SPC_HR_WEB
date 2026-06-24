@@ -7,7 +7,7 @@ SPC HR 모바일 앱(Android/iOS)과 웹(Web) 간의 통신을 담당하는 Nati
 ## 1. 기기 정보 및 FCM 토큰 조회
 
 ### `getDeviceInfo()`
-사용자 기기의 FCM 토큰 값, 보안 영역에 생성되어 보관되는 앱 고유 기기식별자(UUID), 그리고 물리적 기기 모델명(modelName)을 동기식으로 즉시 조회합니다.
+사용자 기기의 FCM 토큰 값, 보안 영역에 생성되어 보관되는 앱 고유 기기식별자(UUID) 및 기기 모델명을 동기식으로 즉시 조회합니다.
 
 * **호출 방식:** 동기 (직접 반환값 수신)
 * **메서드 서명:** `window.SpcMobile.getDeviceInfo() -> String (JSON 포맷)`
@@ -18,7 +18,7 @@ SPC HR 모바일 앱(Android/iOS)과 웹(Web) 간의 통신을 담당하는 Nati
 | `success` | Boolean | FCM 토큰이 유효하게 존재하는지 여부 (`true` / `false`) |
 | `fcmToken` | String | 기기에 할당된 Firebase Cloud Messaging 토큰 값 (미할당 시 빈 문자열 `""`) |
 | `uuid` | String | 앱 최초 실행 시 자동 생성되어 기기 저장소에 고유하게 보관되는 암호화 기기 식별자 (UUID) |
-| `modelName` | String | 기기의 물리적인 하드웨어 모델명 (예: Android의 경우 `"SM-G973N"`, iOS의 경우 `"iPhone14,5"` 등) |
+| `modelName` | String | 사용자 기기의 하드웨어 모델명 (예: `SM-S918N` 등) |
 
 #### JavaScript 사용 예시
 ```javascript
@@ -31,9 +31,9 @@ try {
     console.log("기기 고유 UUID:", deviceInfo.uuid);
     console.log("기기 모델명:", deviceInfo.modelName);
     
-    // TODO: 백엔드 서버로 기기 정보 전송 및 매핑 처리
+    // TODO: 백엔드 서버로 기기 정보 및 토큰 전송 처리
   } else {
-    console.warn("FCM 토큰이 아직 발급되지 않았습니다. UUID:", deviceInfo.uuid, "모델명:", deviceInfo.modelName);
+    console.warn("FCM 토큰이 아직 발급되지 않았습니다. UUID:", deviceInfo.uuid);
   }
 } catch (e) {
   console.error("Native Bridge 호출 실패:", e);

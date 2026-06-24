@@ -284,6 +284,22 @@ pre {
   }
 }
 
+.input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input-group input {
+  flex: 1;
+  min-width: 0;
+}
+
+.input-group button {
+  flex-shrink: 0;
+  min-height: 48px;
+}
+
 /* Custom Checkboxes styling */
 .permission-checkbox-group {
   display: grid;
