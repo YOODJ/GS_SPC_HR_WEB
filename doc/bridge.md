@@ -113,3 +113,82 @@ try {
   console.error("비콘 스캔 Native Bridge 호출에 실패했습니다:", e);
 }
 ```
+
+---
+
+## 3. 권한 상태 및 앱 설정 제어
+
+### `hasPermissions(callbackName, targetPermissionsJson)`
+확인하고자 하는 권한 리스트(JSON 배열)를 인자로 받아, 각 권한의 상태를 키-값 형태의 JSON Map으로 비동기(Callback) 형태로 전달합니다.
+
+* **호출 방식:** 비동기 콜백 (Callback 함수 지정)
+* **메서드 서명:** `window.SpcMobile.hasPermissions(callbackName: String, targetPermissionsJson: String) -> Void`
+
+#### 매개변수 설명
+1. **`callbackName` (String):**
+   * 권한 여부 수신 시 호출될 **전역(Window 스코프) JavaScript 콜백 함수명**입니다.
+2. **`targetPermissionsJson` (String - JSON Array):**
+   * 확인 대상 권한 키들의 배열을 **JSON Stringify** 하여 전달합니다.
+   * 지원 권한 키 목록:
+     * `"location"`: 위치 권한
+     * `"bluetooth"`: 블루투스 BLE 권한
+     * `"camera"`: 카메라 권한
+     * `"notification"`: 알림 권한
+     * `"gallery"`: 사진첩/갤러리 접근 권한
+     * `"storage"`: 저장소 파일 접근 권한 (iOS의 경우 샌드박싱 구조상 항상 `true` 반환)
+
+#### 콜백 함수로 전달되는 데이터 포맷 (JSON String)
+| 필드명 | 타입 | 설명 |
+| :--- | :--- | :--- |
+| `success` | Boolean | 상태 조회 성공 여부 (`true` / `false`) |
+| `permissions` | Object | 요청한 권한 키별 상태 맵 (각 권한 명칭에 대한 `true` 또는 `false` 허용 상태) |
+
+#### JavaScript 사용 예시
+```javascript
+// 1. 권한 여부를 응답받을 콜백 선언
+window.onPermissionsChecked = function(resultJsonString) {
+  const result = JSON.parse(resultJsonString);
+  if (result.success) {
+    console.log("위치 권한 상태:", result.permissions.location);
+    console.log("블루투스 권한 상태:", result.permissions.bluetooth);
+    console.log("알림 권한 상태:", result.permissions.notification);
+    console.log("사진첩 권한 상태:", result.permissions.gallery);
+    
+    if (result.permissions.location && result.permissions.bluetooth) {
+      // 비콘 기능 실행
+    } else {
+      // 설정화면으로 유도
+    }
+  } else {
+    console.error("권한 체크 실패:", result.message);
+  }
+};
+
+// 2. 권한 체크 요청 실행
+const checkKeys = ["location", "bluetooth", "notification", "gallery"];
+try {
+  window.SpcMobile.hasPermissions("onPermissionsChecked", JSON.stringify(checkKeys));
+} catch (e) {
+  console.error("hasPermissions 브릿지 호출 실패:", e);
+}
+```
+
+---
+
+### `openAppSettings()`
+사용자가 앱의 블루투스 및 위치 권한을 수동으로 제어(활성화)할 수 있도록 스마트폰 시스템의 **앱 상세 설정 화면**으로 즉시 이동시킵니다.
+
+* **호출 방식:** 단방향 호출 (설정 화면으로 이탈)
+* **메서드 서명:** `window.SpcMobile.openAppSettings() -> Void`
+
+#### JavaScript 사용 예시
+```javascript
+try {
+  // 사용자의 명시적 동의(예: 확인 팝업 터치)를 거친 후 호출할 것을 적극 권장합니다.
+  if (confirm("비콘 스캔 권한이 필요합니다. 설정창으로 이동하여 권한을 허용하시겠습니까?")) {
+    window.SpcMobile.openAppSettings();
+  }
+} catch (e) {
+  console.error("openAppSettings 호출 실패:", e);
+}
+```
