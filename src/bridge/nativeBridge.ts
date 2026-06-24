@@ -13,12 +13,15 @@ export type NativeBridge = {
   getBiometricAvailability: () => BridgeResult | Promise<BridgeResult>;
   requestBiometricAuth: (callbackName?: string) => BridgeResult | Promise<BridgeResult>;
   testCallback?: (callbackName: string) => BridgeResult | Promise<BridgeResult>;
+  hasPermissions: (callbackName: string, targetPermissionsJson: string) => void;
+  openAppSettings: () => void;
 };
 
 declare global {
   interface Window {
     SpcMobile?: NativeBridge;
     __spcBridgeAuthCallback?: (payload: BridgeResult) => void;
+    __spcBridgePermissionCallback?: (payload: BridgeResult) => void;
     myBeaconCallback?: (payload: BridgeResult) => void;
     myTestCallback?: (payload: BridgeResult) => void;
   }

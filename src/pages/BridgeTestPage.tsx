@@ -19,6 +19,14 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
     )
   );
   const [beaconLogs, setBeaconLogs] = useState<string[]>([]);
+  const [permissionKeys, setPermissionKeys] = useState<{ [key: string]: boolean }>({
+    location: true,
+    bluetooth: true,
+    camera: true,
+    notification: true,
+    gallery: true,
+    storage: true,
+  });
   const [biometricEnabled, setBiometricEnabled] = useState(true);
   const [running, setRunning] = useState<string | null>(null);
   const [popup, setPopup] = useState<{ title: string; result: unknown } | null>(null);
@@ -89,6 +97,33 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
     }
   };
 
+  const checkPermissions = async () => {
+    const selectedKeys = Object.keys(permissionKeys).filter((key) => permissionKeys[key]);
+    if (selectedKeys.length === 0) {
+      alert("선택된 권한 키가 없습니다.");
+      return;
+    }
+    
+    return new Promise((resolve) => {
+      const timeoutId = window.setTimeout(() => {
+        resolve({ success: false, code: 'callback_timeout', message: 'No permissions callback received.' });
+      }, 10000);
+
+      window.__spcBridgePermissionCallback = (payload) => {
+        window.clearTimeout(timeoutId);
+        resolve(normalizeResult(payload));
+      };
+
+      try {
+        console.log("[Web] Calling hasPermissions with keys:", selectedKeys);
+        window.SpcMobile!.hasPermissions('__spcBridgePermissionCallback', JSON.stringify(selectedKeys));
+      } catch (err) {
+        window.clearTimeout(timeoutId);
+        resolve({ success: false, message: err instanceof Error ? err.message : String(err) });
+      }
+    });
+  };
+
   const runAndShow = async (title: string, action: () => Promise<unknown> | unknown) => {
     setRunning(title);
 
@@ -154,6 +189,46 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
               Simulate Eval
             </button>
           </div>
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
+            <h2>Check Permissions</h2>
+          </div>
+          <div className="permission-checkbox-group">
+            {Object.keys(permissionKeys).map((key) => (
+              <label 
+                key={key} 
+                className={`permission-checkbox-label ${permissionKeys[key] ? 'checked' : ''}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={permissionKeys[key]}
+                  onChange={(event) => setPermissionKeys((prev) => ({ ...prev, [key]: event.target.checked }))}
+                />
+                <span>{key}</span>
+              </label>
+            ))}
+          </div>
+          <button className="wide" onClick={() => runAndShow('hasPermissions', checkPermissions)}>
+            Check Permissions
+          </button>
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
+            <h2>App Settings</h2>
+          </div>
+          <button className="wide" onClick={() => {
+            try {
+              console.log("[Web] Calling openAppSettings...");
+              window.SpcMobile?.openAppSettings();
+            } catch (e) {
+              console.error("openAppSettings 호출 실패:", e);
+            }
+          }}>
+            Open Settings
+          </button>
         </section>
 
         <section className="panel">
