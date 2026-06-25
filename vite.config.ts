@@ -157,6 +157,106 @@ function fcmPushPlugin() {
           });
           return;
         }
+
+        // 3. 파일 업로드를 요청하는 API
+        if (req.url?.startsWith('/api/upload')) {
+          if (req.method !== 'POST') {
+            res.statusCode = 405;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: false, message: 'Method Not Allowed' }));
+            return;
+          }
+
+          const chunks: any[] = [];
+          req.on('data', (chunk: any) => {
+            chunks.push(chunk);
+          });
+
+          req.on('end', () => {
+            try {
+              const buffer = Buffer.concat(chunks);
+              const contentType = req.headers['content-type'] || '';
+              const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/);
+              if (!boundaryMatch) {
+                throw new Error('Multipart boundary not found');
+              }
+              const boundary = boundaryMatch[1] || boundaryMatch[2];
+              const boundaryBuffer = Buffer.from(`--${boundary}`);
+              
+              // upload 디렉토리 생성
+              const uploadDir = path.resolve(__dirname, 'upload');
+              if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+              }
+
+              const savedFiles: { filename: string; size: number; contentType: string; path: string }[] = [];
+              
+              let index = 0;
+              while (true) {
+                const nextBoundaryIndex = buffer.indexOf(boundaryBuffer, index);
+                if (nextBoundaryIndex === -1) break;
+                
+                const partStart = nextBoundaryIndex + boundaryBuffer.length;
+                const nextBoundaryIndex2 = buffer.indexOf(boundaryBuffer, partStart);
+                if (nextBoundaryIndex2 === -1) break;
+                
+                const partData = buffer.slice(partStart, nextBoundaryIndex2);
+                
+                // 파트 헤더와 바디 분리 (\r\n\r\n)
+                const headerEnd = partData.indexOf(Buffer.from('\r\n\r\n'));
+                if (headerEnd !== -1) {
+                  const headerStr = partData.slice(0, headerEnd).toString('utf8');
+                  
+                  let bodyEnd = partData.length;
+                  if (partData.slice(bodyEnd - 2).toString() === '\r\n') {
+                    bodyEnd -= 2;
+                  }
+                  
+                  const bodyData = partData.slice(headerEnd + 4, bodyEnd);
+                  
+                  if (bodyData.length > 0) {
+                    const filenameMatch = headerStr.match(/filename="([^"]+)"/i);
+                    const contentTypeMatch = headerStr.match(/Content-Type:\s*([^\r\n]+)/i);
+                    
+                    if (filenameMatch) {
+                      const originalFilename = filenameMatch[1];
+                      const fileExt = path.extname(originalFilename);
+                      const fileBase = path.basename(originalFilename, fileExt);
+                      const uniqueFilename = `${fileBase}_${Date.now()}${fileExt}`;
+                      const savePath = path.join(uploadDir, uniqueFilename);
+                      
+                      fs.writeFileSync(savePath, bodyData);
+                      
+                      savedFiles.push({
+                        filename: originalFilename,
+                        size: bodyData.length,
+                        contentType: contentTypeMatch ? contentTypeMatch[1].trim() : 'application/octet-stream',
+                        path: `/upload/${uniqueFilename}`
+                      });
+                    }
+                  }
+                }
+                index = nextBoundaryIndex2;
+              }
+
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({
+                success: true,
+                message: 'Files uploaded successfully',
+                files: savedFiles
+              }));
+            } catch (error: any) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({
+                success: false,
+                message: error.message || 'Internal Server Error'
+              }));
+            }
+          });
+          return;
+        }
         next();
       });
     }
