@@ -122,7 +122,6 @@ function fcmPushPlugin() {
                   data: clickAction ? {
                     click_action: clickAction,
                     url: clickAction,
-                    link: clickAction,
                     deepLink: clickAction
                   } : undefined
                 }
