@@ -26,6 +26,18 @@ function App() {
   const [path, setPath] = useState<RoutePath>(currentPath);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const appLink = params.get('APP_LINK');
+    if (appLink) {
+      const cleanPath = appLink.replace(/^#/, '');
+      if (cleanPath === '/bridge' || cleanPath === '/fcm' || cleanPath === '/file') {
+        const newUrl = window.location.origin + window.location.pathname + '#' + cleanPath;
+        window.history.replaceState({}, document.title, newUrl);
+        setPath(cleanPath as RoutePath);
+        return;
+      }
+    }
+
     const handleHashChange = () => setPath(currentPath());
     window.addEventListener('hashchange', handleHashChange);
 

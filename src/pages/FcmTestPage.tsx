@@ -10,7 +10,7 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
   const [firebaseProjectId, setFirebaseProjectId] = useState('spc-hr-dev');
   const [pushTitle, setPushTitle] = useState('출퇴근 안내 알림');
   const [pushBody, setPushBody] = useState('비콘 영역 내에 진입하여 출근 처리가 가능합니다.');
-  const [pushClickAction, setPushClickAction] = useState('http://192.168.0.3:5173/#/file');
+  const [pushClickAction, setPushClickAction] = useState('/file');
   const [running, setRunning] = useState<string | null>(null);
   const [popup, setPopup] = useState<{ title: string; result: unknown } | null>(null);
   const [fcmAccessToken, setFcmAccessToken] = useState('');
@@ -234,6 +234,7 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
               id="clickAction" 
               value={pushClickAction} 
               onChange={(e) => setPushClickAction(e.target.value)} 
+              placeholder="예: /file (http 미만은 ?APP_LINK=/file 로 변환됨)"
             />
           </div>
           <button className="wide" onClick={handleSendPush} style={{ marginTop: '8px' }}>
