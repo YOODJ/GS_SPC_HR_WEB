@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { normalizeResult } from '../bridge/nativeBridge';
 
 type FcmTestPageProps = {
@@ -7,13 +7,42 @@ type FcmTestPageProps = {
 
 export function FcmTestPage({ onBack }: FcmTestPageProps) {
   const [fcmToken, setFcmToken] = useState('');
-  const [firebaseProjectId, setFirebaseProjectId] = useState('spc-hr-dev');
+  const [targetEnv, setTargetEnv] = useState<'dev' | 'prod'>('dev');
+  const [firebaseProjectId, setFirebaseProjectId] = useState('조회 중...');
   const [pushTitle, setPushTitle] = useState('출퇴근 안내 알림');
   const [pushBody, setPushBody] = useState('비콘 영역 내에 진입하여 출근 처리가 가능합니다.');
   const [pushClickAction, setPushClickAction] = useState('/file');
   const [running, setRunning] = useState<string | null>(null);
   const [popup, setPopup] = useState<{ title: string; result: unknown } | null>(null);
   const [fcmAccessToken, setFcmAccessToken] = useState('');
+
+  // targetEnv가 바뀔 때마다 실시간으로 백엔드의 credentials 파일에서 project_id를 파싱하여 동기화합니다.
+  useEffect(() => {
+    let active = true;
+    const fetchProjectInfo = async () => {
+      setFirebaseProjectId('조회 중...');
+      try {
+        const response = await fetch(`/api/get-project-info?env=${targetEnv}`);
+        const result = await response.json();
+        if (active) {
+          if (result.success && result.projectId) {
+            setFirebaseProjectId(result.projectId);
+          } else {
+            setFirebaseProjectId(`(설정 파일 없음: ${targetEnv})`);
+          }
+        }
+      } catch (err) {
+        if (active) {
+          setFirebaseProjectId(`(조회 실패: ${targetEnv})`);
+        }
+      }
+    };
+
+    fetchProjectInfo();
+    return () => {
+      active = false;
+    };
+  }, [targetEnv]);
 
   const handleGetDeviceInfo = async () => {
     try {
@@ -39,18 +68,27 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
     }
   };
 
+  const handleEnvChange = (env: 'dev' | 'prod') => {
+    setTargetEnv(env);
+  };
+
   const handleGetAccessToken = async () => {
     setRunning('getAccessToken');
     try {
-      const response = await fetch('/api/get-access-token');
+      const response = await fetch(`/api/get-access-token?env=${targetEnv}`);
       const result = await response.json();
-      if (result.success && result.accessToken) {
-        setFcmAccessToken(result.accessToken);
+      if (result.success) {
+        if (result.accessToken) {
+          setFcmAccessToken(result.accessToken);
+        }
+        if (result.projectId) {
+          setFirebaseProjectId(result.projectId);
+        }
       }
-      setPopup({ title: 'Get Access Token Result', result });
+      setPopup({ title: `Get Access Token Result (${targetEnv.toUpperCase()})`, result });
     } catch (error: any) {
       setPopup({
-        title: 'Get Access Token Result',
+        title: `Get Access Token Result (${targetEnv.toUpperCase()})`,
         result: { success: false, code: 'error', message: error.message || String(error) }
       });
     } finally {
@@ -75,14 +113,19 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
           token: fcmToken,
           title: pushTitle,
           body: pushBody,
-          projectId: firebaseProjectId,
-          clickAction: pushClickAction
+          clickAction: pushClickAction,
+          env: targetEnv
         })
       });
       
       const result = await response.json();
-      if (result.success && result.accessToken) {
-        setFcmAccessToken(result.accessToken);
+      if (result.success) {
+        if (result.accessToken) {
+          setFcmAccessToken(result.accessToken);
+        }
+        if (result.projectId) {
+          setFirebaseProjectId(result.projectId);
+        }
       }
       setPopup({ title: 'Send Push Result', result });
     } catch (error: any) {
@@ -148,6 +191,35 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
       <div className="content-grid">
         <section className="panel">
           <div className="panel-heading">
+            <h2>Target Environment</h2>
+          </div>
+          <div className="field">
+            <label htmlFor="targetEnv">Select Environment</label>
+            <select
+              id="targetEnv"
+              value={targetEnv}
+              onChange={(e) => handleEnvChange(e.target.value as 'dev' | 'prod')}
+              style={{
+                width: '100%',
+                height: '40px',
+                padding: '0 8px',
+                borderRadius: '6px',
+                border: '1px solid #e2e8f0',
+                backgroundColor: '#ffffff',
+                color: '#1e293b',
+                fontSize: '14px',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="dev">Development (Dev)</option>
+              <option value="prod">Production (Prod)</option>
+            </select>
+          </div>
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
             <h2>getDeviceInfo</h2>
           </div>
           <button className="wide" onClick={handleGetDeviceInfo}>
@@ -205,11 +277,13 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
             </div>
           </div>
           <div className="field">
-            <label htmlFor="projectId">Firebase Project ID</label>
+            <label htmlFor="projectId">Firebase Project ID (Read-only)</label>
             <input 
               id="projectId" 
               value={firebaseProjectId} 
-              onChange={(e) => setFirebaseProjectId(e.target.value)} 
+              readOnly
+              style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed' }}
+              placeholder="Get Access Token 호출 시 자동 추출됩니다."
             />
           </div>
           <div className="field">

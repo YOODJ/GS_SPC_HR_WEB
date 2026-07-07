@@ -10,16 +10,70 @@ function fcmPushPlugin() {
     name: 'fcm-push-plugin',
     configureServer(server: any) {
       server.middlewares.use(async (req: any, res: any, next: any) => {
-        // 1. Access Token만 조회하는 API
-        if (req.url?.startsWith('/api/get-access-token')) {
+        // 0. Project 정보만 빠르게 조회하는 API
+        if (req.url?.startsWith('/api/get-project-info')) {
           try {
-            const keyPath = path.resolve(__dirname, 'service-account.json');
+            const parsedUrl = new URL(req.url, 'http://localhost');
+            const env = parsedUrl.searchParams.get('env') || 'dev';
+
+            let keyPath = '';
+            if (env === 'prod') {
+              keyPath = path.resolve(__dirname, 'service-account-prod.json');
+            } else {
+              const devPath = path.resolve(__dirname, 'service-account-dev.json');
+              const legacyPath = path.resolve(__dirname, 'service-account.json');
+              keyPath = fs.existsSync(devPath) ? devPath : legacyPath;
+            }
+
             if (!fs.existsSync(keyPath)) {
               res.statusCode = 404;
               res.setHeader('Content-Type', 'application/json');
               res.end(JSON.stringify({ 
                 success: false, 
-                message: 'service-account.json file not found. Please place it in the project root directory.' 
+                message: `Credentials file for '${env}' environment not found.` 
+              }));
+              return;
+            }
+
+            const keyFile = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({
+              success: true,
+              projectId: keyFile.project_id
+            }));
+          } catch (error: any) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ 
+              success: false, 
+              message: error.message || 'Internal Server Error' 
+            }));
+          }
+          return;
+        }
+
+        // 1. Access Token만 조회하는 API
+        if (req.url?.startsWith('/api/get-access-token')) {
+          try {
+            const parsedUrl = new URL(req.url, 'http://localhost');
+            const env = parsedUrl.searchParams.get('env') || 'dev';
+
+            let keyPath = '';
+            if (env === 'prod') {
+              keyPath = path.resolve(__dirname, 'service-account-prod.json');
+            } else {
+              const devPath = path.resolve(__dirname, 'service-account-dev.json');
+              const legacyPath = path.resolve(__dirname, 'service-account.json');
+              keyPath = fs.existsSync(devPath) ? devPath : legacyPath;
+            }
+
+            if (!fs.existsSync(keyPath)) {
+              res.statusCode = 404;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ 
+                success: false, 
+                message: `Credentials file for '${env}' environment not found. Please place '${path.basename(keyPath)}' in the project root.` 
               }));
               return;
             }
@@ -42,7 +96,8 @@ function fcmPushPlugin() {
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({
               success: true,
-              accessToken: accessToken
+              accessToken: accessToken,
+              projectId: keyFile.project_id
             }));
           } catch (error: any) {
             res.statusCode = 500;
@@ -72,29 +127,44 @@ function fcmPushPlugin() {
 
           req.on('end', async () => {
             try {
-              const { token, title, body: pushBody, projectId, clickAction } = JSON.parse(body);
+              const { token, title, body: pushBody, clickAction, env } = JSON.parse(body);
 
-              if (!token || !title || !pushBody || !projectId) {
+              if (!token || !title || !pushBody) {
                 res.statusCode = 400;
                 res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify({ success: false, message: 'Missing parameters (token, title, body, projectId)' }));
+                res.end(JSON.stringify({ success: false, message: 'Missing parameters (token, title, body)' }));
                 return;
               }
 
-              // 1. service-account.json 파일 존재 여부 검사
-              const keyPath = path.resolve(__dirname, 'service-account.json');
+              // 1. service-account Key 파일 로드
+              const targetEnv = env || 'dev';
+              let keyPath = '';
+              if (targetEnv === 'prod') {
+                keyPath = path.resolve(__dirname, 'service-account-prod.json');
+              } else {
+                const devPath = path.resolve(__dirname, 'service-account-dev.json');
+                const legacyPath = path.resolve(__dirname, 'service-account.json');
+                keyPath = fs.existsSync(devPath) ? devPath : legacyPath;
+              }
+
               if (!fs.existsSync(keyPath)) {
                 res.statusCode = 404;
                 res.setHeader('Content-Type', 'application/json');
                 res.end(JSON.stringify({ 
                   success: false, 
-                  message: 'service-account.json file not found. Please place it in the project root directory.' 
+                  message: `Credentials file for '${targetEnv}' environment not found. Please place '${path.basename(keyPath)}' in the project root.` 
                 }));
                 return;
               }
 
               // 2. google-auth-library를 사용해 JWT Client 생성 및 Access Token 획득
               const keyFile = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
+              const resolvedProjectId = keyFile.project_id;
+              
+              if (!resolvedProjectId) {
+                throw new Error('Firebase project_id not found in the credentials file.');
+              }
+
               const jwtClient = new JWT({
                 email: keyFile.client_email,
                 key: keyFile.private_key,
@@ -109,7 +179,7 @@ function fcmPushPlugin() {
               }
 
               // 3. FCM v1 API 호출
-              const fcmUrl = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
+              const fcmUrl = `https://fcm.googleapis.com/v1/projects/${resolvedProjectId}/messages:send`;
               
               // data payload에 click_action 및 url 설정
               const fcmPayload = {
@@ -144,6 +214,7 @@ function fcmPushPlugin() {
                 success: fcmResponse.ok,
                 status: fcmResponse.status,
                 accessToken: accessToken,
+                projectId: resolvedProjectId,
                 data: fcmResult
               }));
 

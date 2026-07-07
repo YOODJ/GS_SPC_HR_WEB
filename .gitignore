@@ -1,4 +1,5 @@
 node_modules/
 dist/
 service-account.json
+service-account-*.json
 upload/
