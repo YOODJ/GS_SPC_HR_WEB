@@ -28,6 +28,7 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
     storage: true,
   });
   const [biometricEnabled, setBiometricEnabled] = useState(true);
+  const [bottomTabMode, setBottomTabMode] = useState<number>(0);
   const [running, setRunning] = useState<string | null>(null);
   const [popup, setPopup] = useState<{ title: string; result: unknown } | null>(null);
 
@@ -310,6 +311,38 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
               Read Flag
             </button>
           </div>
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
+            <h2>Show Bottom Tab</h2>
+          </div>
+          <div className="field">
+            <label htmlFor="bottomTabMode">Select Tab Mode</label>
+            <select
+              id="bottomTabMode"
+              value={bottomTabMode}
+              onChange={(e) => setBottomTabMode(Number(e.target.value))}
+            >
+              <option value={0}>0 : Hide</option>
+              <option value={1}>1 : Show (사무직)</option>
+              <option value={2}>2 : Show (노무직)</option>
+            </select>
+          </div>
+          <button 
+            className="wide" 
+            onClick={() => {
+              try {
+                console.log("[Web] Calling showBottomTab with mode:", bottomTabMode);
+                window.SpcMobile?.showBottomTab(bottomTabMode);
+              } catch (e) {
+                console.error("showBottomTab 호출 실패:", e);
+                alert("호출 실패: " + String(e));
+              }
+            }}
+          >
+            Send Tab Request
+          </button>
         </section>
       </div>
 

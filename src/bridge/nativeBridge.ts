@@ -15,6 +15,7 @@ export type NativeBridge = {
   testCallback?: (callbackName: string) => BridgeResult | Promise<BridgeResult>;
   hasPermissions: (callbackName: string, targetPermissionsJson: string) => void;
   openAppSettings: () => void;
+  showBottomTab: (mode: number) => void;
 };
 
 declare global {
