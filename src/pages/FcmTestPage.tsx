@@ -189,50 +189,58 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
       </header>
 
       <div className="content-grid">
-        <section className="panel">
+        <section className="panel" style={{ borderTop: '4px solid #3b82f6', borderBottom: '4px solid #3b82f6', backgroundColor: '#f8fafc' }}>
           <div className="panel-heading">
-            <h2>Target Environment</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px' }}>⚙️</span>
+              <h2 style={{ margin: 0 }}>Target Environment</h2>
+            </div>
+            <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#3b82f6', backgroundColor: '#dbeafe', padding: '2px 8px', borderRadius: '12px' }}>
+              Active Configuration
+            </span>
           </div>
-          <div className="field">
-            <label htmlFor="targetEnv">Select Environment</label>
+          <div className="field" style={{ marginTop: '12px' }}>
             <select
               id="targetEnv"
               value={targetEnv}
               onChange={(e) => handleEnvChange(e.target.value as 'dev' | 'prod')}
               style={{
                 width: '100%',
-                height: '40px',
-                padding: '0 8px',
+                height: '42px',
+                padding: '0 12px',
                 borderRadius: '6px',
-                border: '1px solid #e2e8f0',
+                border: '2px solid #3b82f6',
                 backgroundColor: '#ffffff',
                 color: '#1e293b',
                 fontSize: '14px',
+                fontWeight: '600',
                 outline: 'none',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
               }}
             >
               <option value="dev">Development (Dev)</option>
               <option value="prod">Production (Prod)</option>
             </select>
+            <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>
+              선택한 환경의 구글 비공개 키가 서버에서 실시간 활성화되며, 관련 Firebase 프로젝트 정보가 즉시 갱신됩니다.
+            </p>
           </div>
         </section>
 
-        <section className="panel">
-          <div className="panel-heading">
-            <h2>getDeviceInfo</h2>
-          </div>
-          <button className="wide" onClick={handleGetDeviceInfo}>
-            getDeviceInfo
-          </button>
-        </section>
 
         <section className="panel">
           <div className="panel-heading">
             <h2>FCM Access Token</h2>
           </div>
+          <button 
+            className="secondary wide" 
+            onClick={handleGetAccessToken}
+            style={{ marginBottom: '8px' }}
+          >
+            Get Access Token
+          </button>
           <div className="field">
-            <label htmlFor="accessToken">OAuth2 Access Token</label>
             <div className="input-group">
               <input 
                 id="accessToken" 
@@ -249,23 +257,28 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
               </button>
             </div>
           </div>
-          <button className="wide" onClick={handleGetAccessToken}>
-            Get Access Token
-          </button>
         </section>
 
         <section className="panel">
           <div className="panel-heading">
-            <h2>FCM Push Test (Local Only)</h2>
+            <h2>FCM Push Test</h2>
           </div>
           <div className="field">
             <label htmlFor="fcmToken">FCM Device Token</label>
+            <button 
+              type="button" 
+              className="secondary"
+              onClick={handleGetDeviceInfo}
+              style={{ width: '100%', minHeight: '38px', marginBottom: '8px' }}
+            >
+              Get Token (앱에서 실행한 경우)
+            </button>
             <div className="input-group">
               <input 
                 id="fcmToken" 
                 value={fcmToken} 
                 onChange={(e) => setFcmToken(e.target.value)} 
-                placeholder="먼저 getDeviceInfo를 실행하세요"
+                placeholder="단말 토큰을 입력하거나 Get Token을 누르세요"
               />
               <button 
                 type="button" 
@@ -303,7 +316,7 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
             />
           </div>
           <div className="field">
-            <label htmlFor="clickAction">Click Action URL (Deep Link)</label>
+            <label htmlFor="clickAction">Click Action URL</label>
             <input 
               id="clickAction" 
               value={pushClickAction} 
