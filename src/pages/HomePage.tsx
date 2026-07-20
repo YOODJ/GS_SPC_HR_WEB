@@ -25,6 +25,10 @@ export function HomePage({ onNavigate }: HomePageProps) {
           <span className="menu-index">3</span>
           <span>File 테스트</span>
         </button>
+        <button className="menu-item" onClick={() => onNavigate('/login')}>
+          <span className="menu-index">4</span>
+          <span>로그인 페이지 테스트</span>
+        </button>
       </section>
     </main>
   );
