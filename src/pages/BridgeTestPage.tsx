@@ -98,6 +98,42 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
     }
   };
 
+  /** 5초 수집 스캔. 네이티브 응답을 가공 없이 그대로 보여준다. */
+  const scanBeaconList = () => {
+    setBeaconLogs([]);
+
+    if (typeof window.SpcMobile?.scanBeacons !== 'function') {
+      alert('이 앱 버전에는 scanBeacons 가 없습니다. 앱을 업데이트해주세요.');
+      return;
+    }
+
+    let formattedUuids = '';
+    try {
+      const parsed = JSON.parse(beaconUuidsJson);
+      if (!Array.isArray(parsed)) {
+        throw new Error('UUIDs must be a JSON array');
+      }
+      formattedUuids = JSON.stringify(parsed);
+    } catch {
+      alert('올바른 JSON 배열 형식으로 입력해주세요.');
+      return;
+    }
+
+    const startedAt = Date.now();
+    setRunning('scanBeacons');
+
+    window.__spcBeaconScanCallback = (payload) => {
+      delete window.__spcBeaconScanCallback;
+      setRunning(null);
+
+      const raw = typeof payload === 'string' ? payload : JSON.stringify(payload);
+      setBeaconLogs((prev) => [...prev, `+${Date.now() - startedAt}ms payload: ${raw}`]);
+    };
+
+    setBeaconLogs([`[Scan Started]: ${formattedUuids}`]);
+    window.SpcMobile.scanBeacons('window.__spcBeaconScanCallback', formattedUuids);
+  };
+
   const checkPermissions = async () => {
     const selectedKeys = Object.keys(permissionKeys).filter((key) => permissionKeys[key]);
     if (selectedKeys.length === 0) {
@@ -227,9 +263,10 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
               style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
             />
           </div>
-          <button className="wide" onClick={startBeaconScan}>
-            Scan
-          </button>
+          <div className="button-grid two">
+            <button onClick={startBeaconScan}>Scan (첫 1개)</button>
+            <button onClick={scanBeaconList}>Scan (5초 수집)</button>
+          </div>
           
           {beaconLogs.length > 0 && (
             <div style={{ marginTop: '1rem', maxHeight: '200px', overflowY: 'auto', background: '#f5f5f5', padding: '0.5rem', borderRadius: '4px', fontSize: '0.85rem', color: '#333' }}>
