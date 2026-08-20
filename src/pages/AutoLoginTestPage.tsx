@@ -308,6 +308,20 @@ export function AutoLoginTestPage({ onBack }: AutoLoginTestPageProps) {
             <button onClick={() => void runAndShow('enableAutoLogin', () => enableAutoLogin(userId.trim()))}>
               enableAutoLogin
             </button>
+            <button
+              onClick={() =>
+                void runAndShow('saveAutoLoginId', () => {
+                  if (typeof window.SpcMobile?.saveAutoLoginId !== 'function') {
+                    return { success: false, message: '이 앱 버전에는 saveAutoLoginId 가 없습니다.' };
+                  }
+                  return window.SpcMobile.saveAutoLoginId(userId.trim());
+                })
+              }
+            >
+              saveAutoLoginId
+              <br />
+              (인증 없이)
+            </button>
             <button onClick={() => void runAndShow('requestAutoLoginAuth', () => requestAutoLoginAuth())}>
               requestAutoLoginAuth
             </button>

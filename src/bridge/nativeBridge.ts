@@ -28,6 +28,14 @@ export type NativeBridge = {
   getAutoLoginState: () => BridgeResult | Promise<BridgeResult>;
   disableAutoLogin: () => BridgeResult | Promise<BridgeResult>;
   enableAutoLogin: (callbackName: string, userId: string) => void;
+  /**
+   * 기기 인증 없이 아이디만 저장한다. enableAutoLogin 과 저장 위치도 효과도 같고 프롬프트만 없다.
+   *
+   * 인증이 없어지는 게 아니라 requestAutoLoginAuth 시점으로 미뤄지는 것이므로,
+   * 이미 인증을 마쳤거나 getAutoLoginState().deviceAuth.available 을 확인한 뒤 호출해야 한다.
+   * 구버전 앱에는 없으므로 호출 전 존재 여부를 확인할 것.
+   */
+  saveAutoLoginId?: (userId: string) => BridgeResult | Promise<BridgeResult>;
   requestAutoLoginAuth: (callbackName: string) => void;
 };
 
