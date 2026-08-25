@@ -9,6 +9,17 @@ export type NativeBridge = {
    * 없으면 getCurrentBeacon 으로 물러나야 한다.
    */
   scanBeacons?: (callbackName: string, targetUuidsJson: string) => void;
+  /**
+   * scanBeacons 와 같지만 스캔 창 길이를 지정한다. 네이티브에서 1000~30000ms 로 clamp 된다.
+   *
+   * scanBeacons 에 인자를 추가하지 않고 이름을 나눈 이유: Android 브릿지는 이름+인자개수로
+   * 메서드를 찾는데, 주입된 브릿지는 실제 JS 함수가 아니라 네이티브 객체라 Function.length 로
+   * 시그니처를 확인할 수 없다. 즉 인자만 늘리면 구버전 앱에서 호출이 실패하는데 웹이 그것을
+   * 미리 감지할 방법이 없다. 이름이 다르면 존재 여부로 분기할 수 있다.
+   *
+   * 구버전 앱에는 없다. 호출 전에 존재 여부를 확인하고, 없으면 scanBeacons(5초 고정)로 물러날 것.
+   */
+  scanBeaconsWithDuration?: (callbackName: string, targetUuidsJson: string, durationMs: number) => void;
   stopBeacon: () => BridgeResult | Promise<BridgeResult>;
   getDeviceInfo: () => BridgeResult | Promise<BridgeResult>;
   saveRefreshToken: (token: string) => BridgeResult | Promise<BridgeResult>;

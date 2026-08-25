@@ -19,6 +19,7 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
     )
   );
   const [beaconLogs, setBeaconLogs] = useState<string[]>([]);
+  const [beaconDurationMs, setBeaconDurationMs] = useState('8000');
   const [permissionKeys, setPermissionKeys] = useState<{ [key: string]: boolean }>({
     location: true,
     bluetooth: true,
@@ -98,12 +99,28 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
     }
   };
 
-  /** 5초 수집 스캔. 네이티브 응답을 가공 없이 그대로 보여준다. */
-  const scanBeaconList = () => {
+  /**
+   * 수집 스캔. 네이티브 응답을 가공 없이 그대로 보여준다.
+   *
+   * durationMs 를 넘기면 scanBeaconsWithDuration(스캔 창 지정)을, 넘기지 않으면
+   * scanBeacons(5초 고정)를 호출한다. 둘 다 구버전 앱에는 없을 수 있어 존재 여부를 먼저 본다.
+   */
+  const scanBeaconList = (durationMs?: number) => {
     setBeaconLogs([]);
 
-    if (typeof window.SpcMobile?.scanBeacons !== 'function') {
+    const useDuration = durationMs !== undefined;
+
+    if (useDuration && typeof window.SpcMobile?.scanBeaconsWithDuration !== 'function') {
+      alert('이 앱 버전에는 scanBeaconsWithDuration 이 없습니다. 앱을 업데이트해주세요.');
+      return;
+    }
+    if (!useDuration && typeof window.SpcMobile?.scanBeacons !== 'function') {
       alert('이 앱 버전에는 scanBeacons 가 없습니다. 앱을 업데이트해주세요.');
+      return;
+    }
+    // NaN 이 브릿지로 넘어가면 네이티브에서 예측할 수 없게 동작한다.
+    if (useDuration && (!Number.isFinite(durationMs) || durationMs! <= 0)) {
+      alert('Scan Duration 은 0보다 큰 숫자여야 합니다.');
       return;
     }
 
@@ -120,7 +137,7 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
     }
 
     const startedAt = Date.now();
-    setRunning('scanBeacons');
+    setRunning(useDuration ? 'scanBeaconsWithDuration' : 'scanBeacons');
 
     window.__spcBeaconScanCallback = (payload) => {
       delete window.__spcBeaconScanCallback;
@@ -130,8 +147,14 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
       setBeaconLogs((prev) => [...prev, `+${Date.now() - startedAt}ms payload: ${raw}`]);
     };
 
-    setBeaconLogs([`[Scan Started]: ${formattedUuids}`]);
-    window.SpcMobile.scanBeacons('window.__spcBeaconScanCallback', formattedUuids);
+    if (useDuration) {
+      // 네이티브가 1000~30000ms 로 clamp 한다. 실제 적용된 값은 콜백 도착 시각(+Nms)으로 확인.
+      setBeaconLogs([`[Scan Started] durationMs=${durationMs}: ${formattedUuids}`]);
+      window.SpcMobile!.scanBeaconsWithDuration!('window.__spcBeaconScanCallback', formattedUuids, durationMs!);
+    } else {
+      setBeaconLogs([`[Scan Started]: ${formattedUuids}`]);
+      window.SpcMobile!.scanBeacons!('window.__spcBeaconScanCallback', formattedUuids);
+    }
   };
 
   const checkPermissions = async () => {
@@ -263,9 +286,21 @@ export function BridgeTestPage({ onBack }: BridgeTestPageProps) {
               style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
             />
           </div>
+          <div className="field">
+            <label htmlFor="beaconDurationMs">Scan Duration (ms) — 네이티브에서 1000~30000 으로 clamp</label>
+            <input
+              id="beaconDurationMs"
+              type="number"
+              value={beaconDurationMs}
+              onChange={(event) => setBeaconDurationMs(event.target.value)}
+            />
+          </div>
           <div className="button-grid two">
-            <button onClick={startBeaconScan}>Scan (첫 1개)</button>
-            <button onClick={scanBeaconList}>Scan (5초 수집)</button>
+            <button onClick={() => startBeaconScan()}>Scan (첫 1개)</button>
+            <button onClick={() => scanBeaconList()}>Scan (5초 수집)</button>
+            <button onClick={() => scanBeaconList(Number(beaconDurationMs))}>
+              Scan (시간 지정 수집)
+            </button>
           </div>
           
           {beaconLogs.length > 0 && (
