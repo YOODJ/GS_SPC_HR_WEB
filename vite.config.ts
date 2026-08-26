@@ -127,7 +127,7 @@ function fcmPushPlugin() {
 
           req.on('end', async () => {
             try {
-              const { token, title, body: pushBody, clickAction, env } = JSON.parse(body);
+              const { token, title, body: pushBody, clickAction, env, badge } = JSON.parse(body);
 
               if (!token || !title || !pushBody) {
                 res.statusCode = 400;
@@ -181,6 +181,20 @@ function fcmPushPlugin() {
               // 3. FCM v1 API 호출
               const fcmUrl = `https://fcm.googleapis.com/v1/projects/${resolvedProjectId}/messages:send`;
               
+              // iOS 배지는 APNs 전용 필드라 apns 블록을 거쳐야 한다.
+              // message 바로 아래에 aps 를 넣으면 FCM 이 거부한다.
+              // Android 는 이 블록을 통째로 무시하므로 배지 확인은 iOS 에서만 가능하다.
+              // 빈 문자열은 Number() 가 0 으로 바꿔버린다. 0 은 "배지 지우기" 라는 유효한
+              // 값이므로, 미입력과 구분하려면 빈 값을 먼저 걷어내야 한다.
+              const badgeRaw = typeof badge === 'string' ? badge.trim() : badge;
+              const badgeCount = Number(badgeRaw);
+              const hasBadge =
+                badgeRaw !== '' &&
+                badgeRaw !== null &&
+                badgeRaw !== undefined &&
+                Number.isInteger(badgeCount) &&
+                badgeCount >= 0;
+
               // data payload에 click_action 및 url 설정
               const fcmPayload = {
                 message: {
@@ -193,6 +207,13 @@ function fcmPushPlugin() {
                     click_action: clickAction,
                     url: clickAction,
                     deepLink: clickAction
+                  } : undefined,
+                  apns: hasBadge ? {
+                    payload: {
+                      aps: {
+                        badge: badgeCount
+                      }
+                    }
                   } : undefined
                 }
               };

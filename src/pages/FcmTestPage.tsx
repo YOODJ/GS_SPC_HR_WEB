@@ -12,6 +12,8 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
   const [pushTitle, setPushTitle] = useState('출퇴근 안내 알림');
   const [pushBody, setPushBody] = useState('비콘 영역 내에 진입하여 출근 처리가 가능합니다.');
   const [pushClickAction, setPushClickAction] = useState('/file');
+  // iOS 아이콘 배지 확인용. 빈 값이면 apns 블록 자체를 보내지 않는다.
+  const [pushBadge, setPushBadge] = useState('1');
   const [running, setRunning] = useState<string | null>(null);
   const [popup, setPopup] = useState<{ title: string; result: unknown } | null>(null);
   const [fcmAccessToken, setFcmAccessToken] = useState('');
@@ -114,6 +116,7 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
           title: pushTitle,
           body: pushBody,
           clickAction: pushClickAction,
+          badge: pushBadge,
           env: targetEnv
         })
       });
@@ -322,6 +325,15 @@ export function FcmTestPage({ onBack }: FcmTestPageProps) {
               value={pushClickAction} 
               onChange={(e) => setPushClickAction(e.target.value)} 
               placeholder="예: /file (http 미만은 ?APP_LINK=/file 로 변환됨)"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="pushBadge">Badge (iOS)</label>
+            <input 
+              id="pushBadge" 
+              value={pushBadge} 
+              onChange={(e) => setPushBadge(e.target.value)} 
+              placeholder="비우면 미전송. Android 는 무시됨"
             />
           </div>
           <button className="wide" onClick={handleSendPush} style={{ marginTop: '8px' }}>
